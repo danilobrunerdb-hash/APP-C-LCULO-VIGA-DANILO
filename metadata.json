@@ -1,0 +1,5 @@
+{
+  "name": "CalcStruct NBR",
+  "description": "Calculadora de vigas e pilares de concreto armado com assistência de IA baseada na NBR 6118.",
+  "requestFramePermissions": []
+}
