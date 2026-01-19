@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { CalculationResult, ElementType } from '../types';
-import { AlertTriangle, CheckCircle, Info, FileDown, Activity, Box, Layers, Loader2, Cuboid, ScanLine, Maximize2, X, FileCode, ArrowUpDown, Plus, Minus } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Info, FileDown, Activity, Box, Layers, Loader2, Cuboid, ScanLine, Maximize2, X, FileCode, ArrowUpDown } from 'lucide-react';
 import { generateReport } from '../utils/pdfGenerator';
 import { generateCrossSectionDXF } from '../utils/dxfGenerator';
 import CrossSection from './CrossSection';
@@ -30,58 +30,20 @@ interface ResultsCardProps {
 }
 
 const ResultsCard: React.FC<ResultsCardProps> = ({ result, title, type, inputData }) => {
-  const [activeChart, setActiveChart] = useState<'normal' | 'moment' | 'buckling'>('normal'); 
+  const [activeChart, setActiveChart] = useState<'normal' | 'moment' | 'buckling'>('normal'); // Added buckling
   const [showMemory, setShowMemory] = useState(false);
   const [activeView, setActiveView] = useState<'2d' | '3d' | 'side'>('2d');
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
-  const [invertMoment, setInvertMoment] = useState(false); 
+  const [invertMoment, setInvertMoment] = useState(false); // State to invert moment chart
   
-  // Scale States for Charts (Multiplier: 1.1 = default padding, >1 = zoom out/padding, <1 = zoom in)
-  const [scales, setScales] = useState<{ [key: string]: number }>({
-      beamMoment: 1.1,
-      beamShear: 1.1,
-      beamDeflection: 1.1,
-      colNormal: 1.1,
-      colMoment: 1.1,
-      colBuckling: 1.1
-  });
-
+  // State for Full Screen Modal
   const [fullScreenContent, setFullScreenContent] = useState<{ title: string, content: React.ReactNode } | null>(null);
 
   if (!result) return null;
 
-  const handleZoom = (key: string, direction: 'in' | 'out') => {
-      setScales(prev => {
-          const current = prev[key] || 1.1;
-          // Zoom In (+) diminui o range (multiplica por fator < 1)
-          // Zoom Out (-) aumenta o range (multiplica por fator > 1)
-          const factor = direction === 'in' ? 0.8 : 1.25;
-          return { ...prev, [key]: Math.max(0.1, Math.min(current * factor, 20)) };
-      });
-  };
-
-  const getChartDomain = (data: any[] | undefined, key: string, scale: number) => {
-      if (!data || data.length === 0) return ['auto', 'auto'];
-      
-      const values = data.map(d => parseFloat(d[key]));
-      const min = Math.min(...values);
-      const max = Math.max(...values);
-      
-      if (Math.abs(max - min) < 1e-9) {
-           // Linha reta
-           const val = max;
-           return [val - 1, val + 1];
-      }
-
-      const range = max - min;
-      const mid = (max + min) / 2;
-      const newRange = range * scale;
-      
-      return [mid - newRange / 2, mid + newRange / 2];
-  };
-
   const handleDownloadPdf = async () => {
     setIsGeneratingPdf(true);
+    // Pequeno delay para permitir renderização de estados se necessário
     setTimeout(async () => {
         try {
             await generateReport(type, inputData, result);
@@ -96,11 +58,14 @@ const ResultsCard: React.FC<ResultsCardProps> = ({ result, title, type, inputDat
 
   const handleDownloadDxf = () => {
       if (!result.crossSection) return;
+      
       const dxfContent = generateCrossSectionDXF(result.crossSection);
+      // text/plain com utf-8 é seguro para ASCII DXF
       const blob = new Blob([dxfContent], { type: 'text/plain;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
+      // Garante extensão .dxf
       link.download = `secao_${type === ElementType.BEAM ? 'viga' : 'pilar'}.dxf`;
       document.body.appendChild(link);
       link.click();
@@ -108,6 +73,7 @@ const ResultsCard: React.FC<ResultsCardProps> = ({ result, title, type, inputDat
       URL.revokeObjectURL(url);
   };
 
+  // Helper to get Min/Max for charts to draw ReferenceLines
   const getExtremes = (data: any[] | undefined, key: string) => {
       if (!data || data.length === 0) return { min: 0, max: 0 };
       const values = data.map(d => parseFloat(d[key]));
@@ -121,31 +87,12 @@ const ResultsCard: React.FC<ResultsCardProps> = ({ result, title, type, inputDat
       setFullScreenContent({ title, content });
   };
 
-  const ZoomControls = ({ chartKey }: { chartKey: string }) => (
-      <div className="flex items-center bg-slate-100 rounded-md p-0.5 ml-2 border border-slate-200">
-          <button 
-              onClick={() => handleZoom(chartKey, 'in')}
-              className="p-1 hover:bg-white rounded-md text-slate-600 transition-colors"
-              title="Aumentar Zoom (+)"
-          >
-              <Plus className="w-3 h-3" />
-          </button>
-          <div className="w-px h-3 bg-slate-300 mx-0.5"></div>
-          <button 
-              onClick={() => handleZoom(chartKey, 'out')}
-              className="p-1 hover:bg-white rounded-md text-slate-600 transition-colors"
-              title="Diminuir Zoom (-)"
-          >
-              <Minus className="w-3 h-3" />
-          </button>
-      </div>
-  );
-
   const renderBeamCharts = (isFullScreen: boolean = false) => {
       const momentExtremes = getExtremes(result.chartDataMoment, 'moment');
       const shearExtremes = getExtremes(result.chartDataShear, 'shear');
       const deflectionExtremes = getExtremes(result.chartDataDeflection, 'deflection');
 
+      const chartHeight = isFullScreen ? "33%" : "128px";
       const containerClass = isFullScreen ? "h-full flex flex-col gap-8 p-4" : "space-y-6";
       const chartMargin = { top: 10, right: 10, left: 0, bottom: 5 };
 
@@ -156,7 +103,6 @@ const ResultsCard: React.FC<ResultsCardProps> = ({ result, title, type, inputDat
                 <div className="flex justify-between items-center mb-2 pl-2 border-l-2 border-blue-500">
                     <div className="flex items-center gap-2">
                         <p className="text-xs font-semibold text-blue-600">Momento Fletor (kN.m)</p>
-                        <ZoomControls chartKey="beamMoment" />
                         <button 
                             onClick={() => setInvertMoment(!invertMoment)}
                             className={`p-1 rounded-md transition-colors ${invertMoment ? 'bg-blue-100 text-blue-700' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'}`}
@@ -182,12 +128,7 @@ const ResultsCard: React.FC<ResultsCardProps> = ({ result, title, type, inputDat
                             </defs>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                             <XAxis dataKey="x" tick={{fontSize: 10}} hide={!isFullScreen} />
-                            <YAxis 
-                                tick={{fontSize: 10}} 
-                                width={45} 
-                                reversed={invertMoment} 
-                                domain={getChartDomain(result.chartDataMoment, 'moment', scales.beamMoment)} 
-                            />
+                            <YAxis tick={{fontSize: 10}} width={45} reversed={invertMoment} domain={['auto', 'auto']} />
                             <Tooltip contentStyle={{borderRadius: '8px', fontSize: '12px'}} />
                             <ReferenceLine y={momentExtremes.max} stroke="#1e40af" strokeDasharray="3 3">
                                 <Label value={`Máx: ${momentExtremes.max.toFixed(2)}`} position="insideTopRight" fontSize={10} fill="#1e40af" />
@@ -204,10 +145,7 @@ const ResultsCard: React.FC<ResultsCardProps> = ({ result, title, type, inputDat
             {/* Shear Chart */}
             <div className={isFullScreen ? "flex-1 min-h-0" : ""}>
                 <div className="flex justify-between items-center mb-2 pl-2 border-l-2 border-orange-500">
-                    <div className="flex items-center gap-2">
-                        <p className="text-xs font-semibold text-orange-600">Cortante (kN)</p>
-                        <ZoomControls chartKey="beamShear" />
-                    </div>
+                    <p className="text-xs font-semibold text-orange-600">Cortante (kN)</p>
                 </div>
                 <div style={{ height: isFullScreen ? "90%" : "128px", width: "100%" }}>
                     <ResponsiveContainer width="100%" height="100%" id="chart-container-shear">
@@ -220,11 +158,7 @@ const ResultsCard: React.FC<ResultsCardProps> = ({ result, title, type, inputDat
                             </defs>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                             <XAxis dataKey="x" tick={{fontSize: 10}} hide={!isFullScreen}/>
-                            <YAxis 
-                                tick={{fontSize: 10}} 
-                                width={45} 
-                                domain={getChartDomain(result.chartDataShear, 'shear', scales.beamShear)} 
-                            />
+                            <YAxis tick={{fontSize: 10}} width={45} domain={['auto', 'auto']} />
                             <Tooltip contentStyle={{borderRadius: '8px', fontSize: '12px'}} />
                             <ReferenceLine y={shearExtremes.max} stroke="#c2410c" strokeDasharray="3 3">
                                 <Label value={`Máx: ${shearExtremes.max.toFixed(2)}`} position="insideTopRight" fontSize={10} fill="#c2410c" />
@@ -241,10 +175,7 @@ const ResultsCard: React.FC<ResultsCardProps> = ({ result, title, type, inputDat
                 {/* Deflection Chart */}
             <div className={isFullScreen ? "flex-1 min-h-0" : ""}>
                 <div className="flex justify-between items-center mb-2 pl-2 border-l-2 border-violet-500">
-                    <div className="flex items-center gap-2">
-                        <p className="text-xs font-semibold text-violet-600">Deflexão (cm)</p>
-                        <ZoomControls chartKey="beamDeflection" />
-                    </div>
+                    <p className="text-xs font-semibold text-violet-600">Deflexão (cm)</p>
                 </div>
                 <div style={{ height: isFullScreen ? "90%" : "128px", width: "100%" }}>
                     <ResponsiveContainer width="100%" height="100%" id="chart-container-deflection">
@@ -257,11 +188,7 @@ const ResultsCard: React.FC<ResultsCardProps> = ({ result, title, type, inputDat
                             </defs>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                             <XAxis dataKey="x" tick={{fontSize: 10}} />
-                            <YAxis 
-                                tick={{fontSize: 10}} 
-                                width={45} 
-                                domain={getChartDomain(result.chartDataDeflection, 'deflection', scales.beamDeflection)} 
-                            />
+                            <YAxis tick={{fontSize: 10}} width={45} domain={['auto', 'auto']} />
                             <Tooltip contentStyle={{borderRadius: '8px', fontSize: '12px'}} />
                             <ReferenceLine y={deflectionExtremes.max} stroke="#7c3aed" strokeDasharray="3 3">
                                  <Label value={`Máx: ${deflectionExtremes.max.toFixed(3)}`} position="insideBottomRight" fontSize={10} fill="#7c3aed" />
@@ -278,6 +205,7 @@ const ResultsCard: React.FC<ResultsCardProps> = ({ result, title, type, inputDat
       );
   };
 
+  // Update modal content if invertMoment changes while modal is open
   useEffect(() => {
       if (fullScreenContent && fullScreenContent.title === "Diagramas de Esforços") {
           setFullScreenContent({
@@ -285,13 +213,7 @@ const ResultsCard: React.FC<ResultsCardProps> = ({ result, title, type, inputDat
               content: renderBeamCharts(true)
           });
       }
-      if (fullScreenContent && fullScreenContent.title === "Diagramas do Pilar") {
-          setFullScreenContent({
-              title: "Diagramas do Pilar",
-              content: renderColumnCharts(true)
-          });
-      }
-  }, [invertMoment, scales]);
+  }, [invertMoment]);
 
   const renderColumnCharts = (isFullScreen: boolean = false) => {
       const normalExtremes = getExtremes(result.chartDataNormal, 'normal');
@@ -303,7 +225,7 @@ const ResultsCard: React.FC<ResultsCardProps> = ({ result, title, type, inputDat
       return (
         <div className={isFullScreen ? "h-full w-full p-4 flex flex-col" : "flex flex-col h-full"}>
              {!isFullScreen && (
-                 <div className="flex space-x-2 bg-slate-100 p-1 rounded-lg mb-4 items-center">
+                 <div className="flex space-x-2 bg-slate-100 p-1 rounded-lg mb-4">
                      <button
                         onClick={() => setActiveChart('normal')}
                         className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${activeChart === 'normal' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
@@ -322,35 +244,18 @@ const ResultsCard: React.FC<ResultsCardProps> = ({ result, title, type, inputDat
                      >
                         Flambagem
                      </button>
-
                      <div className="flex-1"></div>
-
-                     {/* Controls for Active Chart */}
-                     <ZoomControls chartKey={
-                         activeChart === 'normal' ? 'colNormal' : 
-                         activeChart === 'moment' ? 'colMoment' : 'colBuckling'
-                     } />
-
-                     <button onClick={() => openFullScreen("Diagramas do Pilar", renderColumnCharts(true))} className="text-slate-400 hover:text-blue-600 p-1 ml-2">
+                     <button onClick={() => openFullScreen("Diagramas do Pilar", renderColumnCharts(true))} className="text-slate-400 hover:text-blue-600 p-1">
                         <Maximize2 className="w-3 h-3"/>
                      </button>
                  </div>
              )}
              
              {isFullScreen && (
-                 <div className="flex justify-center gap-4 mb-4 items-center">
-                      <div className="flex items-center gap-2">
-                        <button onClick={() => setActiveChart('normal')} className={`px-4 py-2 rounded ${activeChart === 'normal' ? 'bg-emerald-600 text-white' : 'bg-slate-200'}`}>Normal</button>
-                        {activeChart === 'normal' && <ZoomControls chartKey="colNormal" />}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button onClick={() => setActiveChart('moment')} className={`px-4 py-2 rounded ${activeChart === 'moment' ? 'bg-blue-600 text-white' : 'bg-slate-200'}`}>Momento</button>
-                        {activeChart === 'moment' && <ZoomControls chartKey="colMoment" />}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button onClick={() => setActiveChart('buckling')} className={`px-4 py-2 rounded ${activeChart === 'buckling' ? 'bg-violet-600 text-white' : 'bg-slate-200'}`}>Flambagem</button>
-                        {activeChart === 'buckling' && <ZoomControls chartKey="colBuckling" />}
-                      </div>
+                 <div className="flex justify-center gap-4 mb-4">
+                      <button onClick={() => setActiveChart('normal')} className={`px-4 py-2 rounded ${activeChart === 'normal' ? 'bg-emerald-600 text-white' : 'bg-slate-200'}`}>Normal</button>
+                      <button onClick={() => setActiveChart('moment')} className={`px-4 py-2 rounded ${activeChart === 'moment' ? 'bg-blue-600 text-white' : 'bg-slate-200'}`}>Momento</button>
+                      <button onClick={() => setActiveChart('buckling')} className={`px-4 py-2 rounded ${activeChart === 'buckling' ? 'bg-violet-600 text-white' : 'bg-slate-200'}`}>Flambagem</button>
                  </div>
              )}
 
@@ -365,11 +270,7 @@ const ResultsCard: React.FC<ResultsCardProps> = ({ result, title, type, inputDat
                                 </linearGradient>
                             </defs>
                             <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
-                            <XAxis 
-                                type="number" 
-                                tick={{fontSize: 10}} 
-                                domain={getChartDomain(result.chartDataNormal, 'normal', scales.colNormal)} 
-                            />
+                            <XAxis type="number" tick={{fontSize: 10}} domain={['auto', 'auto']} />
                             <YAxis dataKey="x" type="number" tick={{fontSize: 10}} width={35} label={{ value: 'Altura (m)', angle: -90, position: 'insideLeft' }} />
                             <Tooltip contentStyle={{borderRadius: '8px', fontSize: '12px'}} cursor={{strokeDasharray: '3 3'}} />
                             <ReferenceLine x={normalExtremes.max} stroke="#047857" strokeDasharray="3 3">
@@ -380,11 +281,7 @@ const ResultsCard: React.FC<ResultsCardProps> = ({ result, title, type, inputDat
                     ) : activeChart === 'moment' ? (
                          <AreaChart layout="vertical" data={result.chartDataMoment} margin={chartMargin}>
                             <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
-                            <XAxis 
-                                type="number" 
-                                tick={{fontSize: 10}} 
-                                domain={getChartDomain(result.chartDataMoment, 'moment', scales.colMoment)} 
-                            />
+                            <XAxis type="number" tick={{fontSize: 10}} domain={['auto', 'auto']} />
                             <YAxis dataKey="x" type="number" tick={{fontSize: 10}} width={35} label={{ value: 'Altura (m)', angle: -90, position: 'insideLeft' }} />
                             <Tooltip contentStyle={{borderRadius: '8px', fontSize: '12px'}} cursor={{strokeDasharray: '3 3'}} />
                              <ReferenceLine x={momentExtremes.max} stroke="#1e40af" strokeDasharray="3 3">
@@ -395,12 +292,7 @@ const ResultsCard: React.FC<ResultsCardProps> = ({ result, title, type, inputDat
                     ) : (
                         <LineChart layout="vertical" data={result.chartDataBuckling} margin={chartMargin}>
                             <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
-                            <XAxis 
-                                type="number" 
-                                tick={{fontSize: 10}} 
-                                label={{ value: 'Deslocamento (cm)', position: 'insideBottom', offset: -5 }} 
-                                domain={getChartDomain(result.chartDataBuckling, 'deflection', scales.colBuckling)} 
-                            />
+                            <XAxis type="number" tick={{fontSize: 10}} label={{ value: 'Deslocamento (cm)', position: 'insideBottom', offset: -5 }} domain={['auto', 'auto']} />
                             <YAxis dataKey="x" type="number" tick={{fontSize: 10}} width={35} label={{ value: 'Altura (m)', angle: -90, position: 'insideLeft' }} />
                             <Tooltip contentStyle={{borderRadius: '8px', fontSize: '12px'}} cursor={{strokeDasharray: '3 3'}} />
                             {/* Axis Line */}
