@@ -385,82 +385,6 @@ export const solveBeam = (input: BeamInput) => {
     // Note: If x=0 is a free end, Reaction is 0.
     // If fixed, Reaction has values.
     
-    for (let i = 0; i <= nPoints; i++) {
-        const x = i * dx;
-        const x_prev = (i > 0) ? (i - 1) * dx : 0;
-        
-        // integrate loads from x_prev to x
-        if (i > 0) {
-            const segLen = x - x_prev;
-            // Distributed loads integration
-            let loadForce = 0;
-            let loadMoment = 0; // Moment caused by this load segment about x
-            
-            distributedLoads.forEach(d => {
-                const start = Math.max(x_prev, d.start);
-                const end = Math.min(x, d.end);
-                if (end > start) {
-                    const len = end - start;
-                    // Trapezoid q1, q2
-                    const totalL = d.end - d.start;
-                    const slope = (d.endMagnitude - d.startMagnitude) / totalL;
-                    const q1 = d.startMagnitude + slope * (start - d.start);
-                    const q2 = d.startMagnitude + slope * (end - d.start);
-                    
-                    const area = len * (q1 + q2) / 2;
-                    loadForce += area;
-                    
-                    // Centroid of this small slice (approx middle)
-                    const distToX = x - (start + len/2);
-                    loadMoment += area * distToX;
-                }
-            });
-            
-            // Update M first with previous V
-            // M(x) = M(prev) + V(prev)*dx - LoadMoment
-            M += V * segLen - loadMoment; 
-            
-            // Update V
-            V -= loadForce;
-        }
-
-        // Add Point Loads/Reactions exactly at x
-        // Use a tolerance window to capture discrete items
-        const tolerance = dx / 2;
-        
-        // 1. Reactions
-        supports.forEach(s => {
-            if (Math.abs(s.position - x) <= tolerance) {
-                // To avoid double counting, only add if this is the closest point step
-                // Ideally, check if s.position is between x_prev and x, or exactly match.
-                // Simple discrete check:
-                if (Math.abs(s.position - x) < 0.001 || (s.position > x_prev && s.position <= x)) {
-                    // We need the computed reaction.
-                    // But wait, the FEM reaction calculated above includes internal forces.
-                    // It's cleaner to just use the Support logic:
-                    // V jumps by Ry. M jumps by Mz (if external moment applied).
-                    // Wait, Mz reaction is external moment RESISTANCE.
-                    // Internal Moment = External Moment?
-                    // If support is Fixed at Left, it applies Moment Mz.
-                    // Beam Moment starts at Mz.
-                    // Let's retrieve R from map.
-                    const r = reactionMap.get(s.position);
-                    if (r) {
-                        // Apply Reaction only ONCE.
-                        // We need a flag or better check.
-                    }
-                }
-            }
-        });
-        
-        // Let's refine the loop. Integrate dx. Check for point entities in interval (x_prev, x].
-        // Handle x=0 separately.
-    }
-
-    // --- RESTART DIAGRAM LOOP (Cleaner Logic) ---
-    chartDataMoment.length = 0; chartDataShear.length = 0; chartDataDeflection.length = 0;
-    V = 0; M = 0;
-    
     // Add Reaction at x=0
     if (reactionMap.has(0)) {
         const r = reactionMap.get(0)!;
@@ -538,8 +462,8 @@ export const solveBeam = (input: BeamInput) => {
             });
         }
         
-        chartDataShear.push({ x: x.toFixed(2), shear: V.toFixed(2) });
-        chartDataMoment.push({ x: x.toFixed(2), moment: M.toFixed(2) });
+        chartDataShear.push({ x: parseFloat(x.toFixed(2)), shear: parseFloat(V.toFixed(2)) });
+        chartDataMoment.push({ x: parseFloat(x.toFixed(2)), moment: parseFloat(M.toFixed(2)) });
         
         if (M > maxMomentPos) maxMomentPos = M;
         if (M < maxMomentNeg) maxMomentNeg = M;
@@ -579,7 +503,7 @@ export const solveBeam = (input: BeamInput) => {
         // Let's show displacement magnitude or real sign.
         // Usually: Down is negative y. Graph: Negative values.
         const y_cm = y_def * 100;
-        chartDataDeflection.push({ x: x.toFixed(2), deflection: y_cm.toFixed(3) });
+        chartDataDeflection.push({ x: parseFloat(x.toFixed(2)), deflection: parseFloat(y_cm.toFixed(3)) });
         if (Math.abs(y_cm) > Math.abs(maxDeflection)) maxDeflection = y_cm;
     }
 

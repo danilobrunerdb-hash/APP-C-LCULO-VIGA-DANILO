@@ -98,8 +98,7 @@ export const calculateBeam = (input: BeamInput): CalculationResult => {
 
   // Helper to calculate reinforcement for a specific moment
   const calculateReinforcement = (MomentD_kNm: number, barDia: number, face: 'bottom' | 'top') => {
-      // --- 3. DETALHAMENTO DE KC E KS ---
-      memory.push(`\n**3 - DETALHAMENTO DE CÁLCULO E ÁREA DE AÇO (${face === 'bottom' ? 'VÃO/POSITIVO' : 'APOIO/NEGATIVO'})**`);
+      // --- 3. DETALHAMENTO DE CÁLCULO E ÁREA DE AÇO (${face === 'bottom' ? 'VÃO/POSITIVO' : 'APOIO/NEGATIVO'})**`);
       
       const Md_kNcm = MomentD_kNm * 100;
       memory.push(`   Momento de Cálculo (Md): ${MomentD_kNm.toFixed(2)} kN.m = ${Md_kNcm.toFixed(0)} kN.cm`);
@@ -586,15 +585,15 @@ export const calculateColumn = (input: ColumnInput): CalculationResult => {
 
   // Chart Data (Normal Force Diagram is constant)
   const chartDataNormal = [
-      { x: 0, normal: Nd.toFixed(2) },
-      { x: height, normal: Nd.toFixed(2) }
+      { x: 0, normal: parseFloat(Nd.toFixed(2)) },
+      { x: height, normal: parseFloat(Nd.toFixed(2)) }
   ];
   
   // Moment Diagram (Linear max envelope)
   const chartDataMoment = [
-      { x: 0, moment: Math.max(M_tot_x, M_tot_y).toFixed(2) },
-      { x: height/2, moment: (Math.max(M_tot_x, M_tot_y)*0.6).toFixed(2) }, // Simplified shape
-      { x: height, moment: Math.max(M_tot_x, M_tot_y).toFixed(2) }
+      { x: 0, moment: parseFloat(Math.max(M_tot_x, M_tot_y).toFixed(2)) },
+      { x: height/2, moment: parseFloat((Math.max(M_tot_x, M_tot_y)*0.6).toFixed(2)) }, 
+      { x: height, moment: parseFloat(Math.max(M_tot_x, M_tot_y).toFixed(2)) }
   ];
 
   // --- Buckling Chart Data ---
@@ -629,7 +628,7 @@ export const calculateColumn = (input: ColumnInput): CalculationResult => {
           shapeFactor = (xi * xi) * (1 - xi) * 2.5; 
       }
       
-      const deflectionCm = (e_tot * shapeFactor * 100).toFixed(3);
+      const deflectionCm = parseFloat((e_tot * shapeFactor * 100).toFixed(3));
       chartDataBuckling.push({ x, deflection: deflectionCm });
   }
 
