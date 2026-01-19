@@ -94,6 +94,7 @@ const ResultsCard: React.FC<ResultsCardProps> = ({ result, title, type, inputDat
 
       const chartHeight = isFullScreen ? "33%" : "128px";
       const containerClass = isFullScreen ? "h-full flex flex-col gap-8 p-4" : "space-y-6";
+      const chartMargin = { top: 10, right: 10, left: 0, bottom: 5 };
 
       return (
         <div className={containerClass}>
@@ -118,7 +119,7 @@ const ResultsCard: React.FC<ResultsCardProps> = ({ result, title, type, inputDat
                 </div>
                 <div style={{ height: isFullScreen ? "90%" : "128px", width: "100%" }}>
                     <ResponsiveContainer width="100%" height="100%" id="chart-container-moment">
-                        <AreaChart data={result.chartDataMoment}>
+                        <AreaChart data={result.chartDataMoment} margin={chartMargin}>
                             <defs>
                                 <linearGradient id="colorMoment" x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
@@ -127,7 +128,7 @@ const ResultsCard: React.FC<ResultsCardProps> = ({ result, title, type, inputDat
                             </defs>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                             <XAxis dataKey="x" tick={{fontSize: 10}} hide={!isFullScreen} />
-                            <YAxis tick={{fontSize: 10}} width={35} reversed={invertMoment} />
+                            <YAxis tick={{fontSize: 10}} width={45} reversed={invertMoment} domain={['auto', 'auto']} />
                             <Tooltip contentStyle={{borderRadius: '8px', fontSize: '12px'}} />
                             <ReferenceLine y={momentExtremes.max} stroke="#1e40af" strokeDasharray="3 3">
                                 <Label value={`Máx: ${momentExtremes.max.toFixed(2)}`} position="insideTopRight" fontSize={10} fill="#1e40af" />
@@ -148,7 +149,7 @@ const ResultsCard: React.FC<ResultsCardProps> = ({ result, title, type, inputDat
                 </div>
                 <div style={{ height: isFullScreen ? "90%" : "128px", width: "100%" }}>
                     <ResponsiveContainer width="100%" height="100%" id="chart-container-shear">
-                        <AreaChart data={result.chartDataShear}>
+                        <AreaChart data={result.chartDataShear} margin={chartMargin}>
                             <defs>
                                 <linearGradient id="colorShear" x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="5%" stopColor="#ea580c" stopOpacity={0.8}/>
@@ -157,7 +158,7 @@ const ResultsCard: React.FC<ResultsCardProps> = ({ result, title, type, inputDat
                             </defs>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                             <XAxis dataKey="x" tick={{fontSize: 10}} hide={!isFullScreen}/>
-                            <YAxis tick={{fontSize: 10}} width={35} />
+                            <YAxis tick={{fontSize: 10}} width={45} domain={['auto', 'auto']} />
                             <Tooltip contentStyle={{borderRadius: '8px', fontSize: '12px'}} />
                             <ReferenceLine y={shearExtremes.max} stroke="#c2410c" strokeDasharray="3 3">
                                 <Label value={`Máx: ${shearExtremes.max.toFixed(2)}`} position="insideTopRight" fontSize={10} fill="#c2410c" />
@@ -178,7 +179,7 @@ const ResultsCard: React.FC<ResultsCardProps> = ({ result, title, type, inputDat
                 </div>
                 <div style={{ height: isFullScreen ? "90%" : "128px", width: "100%" }}>
                     <ResponsiveContainer width="100%" height="100%" id="chart-container-deflection">
-                        <AreaChart data={result.chartDataDeflection}>
+                        <AreaChart data={result.chartDataDeflection} margin={chartMargin}>
                             <defs>
                                 <linearGradient id="colorDeflection" x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8}/>
@@ -187,7 +188,7 @@ const ResultsCard: React.FC<ResultsCardProps> = ({ result, title, type, inputDat
                             </defs>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                             <XAxis dataKey="x" tick={{fontSize: 10}} />
-                            <YAxis tick={{fontSize: 10}} width={35} />
+                            <YAxis tick={{fontSize: 10}} width={45} domain={['auto', 'auto']} />
                             <Tooltip contentStyle={{borderRadius: '8px', fontSize: '12px'}} />
                             <ReferenceLine y={deflectionExtremes.max} stroke="#7c3aed" strokeDasharray="3 3">
                                  <Label value={`Máx: ${deflectionExtremes.max.toFixed(3)}`} position="insideBottomRight" fontSize={10} fill="#7c3aed" />
@@ -218,6 +219,8 @@ const ResultsCard: React.FC<ResultsCardProps> = ({ result, title, type, inputDat
       const normalExtremes = getExtremes(result.chartDataNormal, 'normal');
       const momentExtremes = getExtremes(result.chartDataMoment, 'moment');
       const bucklingExtremes = getExtremes(result.chartDataBuckling, 'deflection');
+      
+      const chartMargin = { top: 15, right: 30, left: 10, bottom: 20 };
 
       return (
         <div className={isFullScreen ? "h-full w-full p-4 flex flex-col" : "flex flex-col h-full"}>
@@ -259,7 +262,7 @@ const ResultsCard: React.FC<ResultsCardProps> = ({ result, title, type, inputDat
              <div style={{ height: isFullScreen ? "90%" : "300px", width: "100%" }}>
                 <ResponsiveContainer width="100%" height="100%">
                     {activeChart === 'normal' ? (
-                        <AreaChart layout="vertical" data={result.chartDataNormal} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                        <AreaChart layout="vertical" data={result.chartDataNormal} margin={chartMargin}>
                             <defs>
                                 <linearGradient id="colorNormal" x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
@@ -267,8 +270,8 @@ const ResultsCard: React.FC<ResultsCardProps> = ({ result, title, type, inputDat
                                 </linearGradient>
                             </defs>
                             <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
-                            <XAxis type="number" tick={{fontSize: 10}} />
-                            <YAxis dataKey="x" type="number" tick={{fontSize: 10}} label={{ value: 'Altura (m)', angle: -90, position: 'insideLeft' }} />
+                            <XAxis type="number" tick={{fontSize: 10}} domain={['auto', 'auto']} />
+                            <YAxis dataKey="x" type="number" tick={{fontSize: 10}} width={35} label={{ value: 'Altura (m)', angle: -90, position: 'insideLeft' }} />
                             <Tooltip contentStyle={{borderRadius: '8px', fontSize: '12px'}} cursor={{strokeDasharray: '3 3'}} />
                             <ReferenceLine x={normalExtremes.max} stroke="#047857" strokeDasharray="3 3">
                                 <Label value={`Máx: ${normalExtremes.max.toFixed(2)}`} position="insideTopRight" fontSize={10} fill="#047857" />
@@ -276,10 +279,10 @@ const ResultsCard: React.FC<ResultsCardProps> = ({ result, title, type, inputDat
                             <Area type="step" dataKey="normal" stroke="#059669" fill="url(#colorNormal)" name="Normal (kN)" />
                         </AreaChart>
                     ) : activeChart === 'moment' ? (
-                         <AreaChart layout="vertical" data={result.chartDataMoment} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                         <AreaChart layout="vertical" data={result.chartDataMoment} margin={chartMargin}>
                             <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
-                            <XAxis type="number" tick={{fontSize: 10}} />
-                            <YAxis dataKey="x" type="number" tick={{fontSize: 10}} label={{ value: 'Altura (m)', angle: -90, position: 'insideLeft' }} />
+                            <XAxis type="number" tick={{fontSize: 10}} domain={['auto', 'auto']} />
+                            <YAxis dataKey="x" type="number" tick={{fontSize: 10}} width={35} label={{ value: 'Altura (m)', angle: -90, position: 'insideLeft' }} />
                             <Tooltip contentStyle={{borderRadius: '8px', fontSize: '12px'}} cursor={{strokeDasharray: '3 3'}} />
                              <ReferenceLine x={momentExtremes.max} stroke="#1e40af" strokeDasharray="3 3">
                                 <Label value={`Máx: ${momentExtremes.max.toFixed(2)}`} position="insideTopRight" fontSize={10} fill="#1e40af" />
@@ -287,10 +290,10 @@ const ResultsCard: React.FC<ResultsCardProps> = ({ result, title, type, inputDat
                             <Area type="monotone" dataKey="moment" stroke="#2563eb" fill="url(#colorMoment)" name="Momento" />
                         </AreaChart>
                     ) : (
-                        <LineChart layout="vertical" data={result.chartDataBuckling} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                        <LineChart layout="vertical" data={result.chartDataBuckling} margin={chartMargin}>
                             <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
-                            <XAxis type="number" tick={{fontSize: 10}} label={{ value: 'Deslocamento (cm)', position: 'insideBottom', offset: -5 }}/>
-                            <YAxis dataKey="x" type="number" tick={{fontSize: 10}} label={{ value: 'Altura (m)', angle: -90, position: 'insideLeft' }} />
+                            <XAxis type="number" tick={{fontSize: 10}} label={{ value: 'Deslocamento (cm)', position: 'insideBottom', offset: -5 }} domain={['auto', 'auto']} />
+                            <YAxis dataKey="x" type="number" tick={{fontSize: 10}} width={35} label={{ value: 'Altura (m)', angle: -90, position: 'insideLeft' }} />
                             <Tooltip contentStyle={{borderRadius: '8px', fontSize: '12px'}} cursor={{strokeDasharray: '3 3'}} />
                             {/* Axis Line */}
                             <ReferenceLine x={0} stroke="#94a3b8" strokeDasharray="3 3" />
